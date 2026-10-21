@@ -1,0 +1,666 @@
+/*
+  Design notes
+  - Phase colors follow the oilfield convention: oil green, water blue, gas red.
+    They are only used for production data, so the color always means a phase.
+  - Barlow is a low-contrast grotesk drawn from highway and industrial signage;
+    the semi-condensed cut fits wide numbers into tight figure rows.
+*/
+:root {
+  --bg: #eef1f3;
+  --panel: #ffffff;
+  --ink: #15202b;
+  --muted: #5b6875;
+  --rule: #dce2e7;
+  --oil: #2e8b57;
+  --water: #2f6db5;
+  --gas: #c2453a;
+  --warning: #9a6200;
+  --warning-bg: #fdf3e1;
+  --critical: #a8201a;
+  --critical-bg: #fbe9e7;
+  --focus: #2f6db5;
+  --radius-panel: 10px;
+  --radius-control: 6px;
+
+  --font: "Barlow", system-ui, sans-serif;
+  --font-figures: "Barlow Semi Condensed", "Barlow", system-ui, sans-serif;
+
+  color-scheme: light;
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-figures);
+  margin: 0;
+  line-height: 1.15;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+a {
+  color: var(--water);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+code {
+  font-size: 0.85em;
+  background: var(--bg);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Layout ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: var(--ink);
+  color: #fff;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+  text-decoration: none;
+  font-family: var(--font-figures);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.brand svg {
+  width: 26px;
+  height: 26px;
+}
+
+.topbar-link {
+  color: #c9d3dc;
+  font-size: 0.9rem;
+}
+
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.as-of {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.panel {
+  background: var(--panel);
+  border-radius: var(--radius-panel);
+  padding: 1.25rem;
+  min-width: 0;
+}
+
+.panel.narrow {
+  max-width: 720px;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.side {
+  display: grid;
+  gap: 1rem;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.empty {
+  color: var(--muted);
+  margin: 0.5rem 0;
+}
+
+/* ---------- Figures ---------- */
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2.5rem;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: var(--panel);
+  border-radius: var(--radius-panel);
+}
+
+.figure dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.figure dd {
+  margin: 0;
+  font-family: var(--font-figures);
+  font-size: 1.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.figure .unit {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* The phase bar is the one decorative device: it ties a number to its chart line. */
+.figure[class*="phase-"] dd {
+  border-bottom: 3px solid;
+  padding-bottom: 0.15rem;
+}
+
+.phase-oil dd {
+  border-color: var(--oil);
+}
+
+.phase-gas dd {
+  border-color: var(--gas);
+}
+
+.phase-water dd {
+  border-color: var(--water);
+}
+
+/* ---------- Controls ---------- */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+select,
+input {
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid #b9c3cc;
+  border-radius: var(--radius-control);
+  padding: 0.45rem 0.6rem;
+}
+
+.segmented {
+  display: inline-flex;
+  background: var(--panel);
+  border: 1px solid #b9c3cc;
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+.segmented button {
+  font: inherit;
+  border: 0;
+  background: transparent;
+  padding: 0.45rem 0.8rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.segmented button + button {
+  border-left: 1px solid var(--rule);
+}
+
+.segmented button[aria-checked="true"] {
+  background: var(--ink);
+  color: #fff;
+}
+
+.range-row {
+  margin: 1rem 0;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius-control);
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+}
+
+.button.secondary {
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+label.button:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.status {
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-control);
+}
+
+.status.active {
+  background: #e6f2eb;
+  color: #1f6b41;
+}
+
+.status.shut_in {
+  background: #e7eaed;
+  color: var(--muted);
+}
+
+.banner-error,
+.form-error {
+  color: var(--critical);
+}
+
+.banner-error {
+  background: var(--critical-bg);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-control);
+}
+
+/* ---------- Charts ---------- */
+.chart {
+  margin: 0;
+}
+
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.chart-head .unit {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.legend {
+  display: flex;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.chart-tooltip {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-control);
+  padding: 0.5rem 0.65rem;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 14px rgb(21 32 43 / 0.12);
+}
+
+.chart-tooltip-date {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chart-tooltip-row strong {
+  margin-left: auto;
+  padding-left: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-table {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.chart-table summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.chart-table .table-scroll {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+/* ---------- Tables ---------- */
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+th {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.num {
+  text-align: right;
+}
+
+th button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+table.wells tbody tr:hover {
+  background: #f6f8f9;
+}
+
+tr.shut-in td {
+  color: var(--muted);
+}
+
+.well-link {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.tag {
+  margin-left: 0.4rem;
+  padding: 0 0.35rem;
+  border-radius: 4px;
+  background: #e7eaed;
+}
+
+.flag {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+}
+
+.flag.warning {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.flag.critical {
+  background: var(--critical-bg);
+  color: var(--critical);
+}
+
+.wc {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wc-track {
+  width: 48px;
+  height: 6px;
+  background: var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.wc-fill {
+  display: block;
+  height: 100%;
+  background: var(--water);
+}
+
+/* ---------- Alerts ---------- */
+.count {
+  font-size: 0.8rem;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+
+.alerts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.alert {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-control);
+}
+
+.alert.warning {
+  background: var(--warning-bg);
+}
+
+.alert.critical {
+  background: var(--critical-bg);
+}
+
+.alert p {
+  margin: 0.1rem 0 0;
+  font-size: 0.9rem;
+}
+
+.alert-well {
+  font-weight: 600;
+  color: var(--ink);
+  margin-right: 0.5rem;
+}
+
+.alert-kind {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.sev-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 0.15rem;
+}
+
+.sev-icon.warning {
+  fill: var(--warning);
+}
+
+.sev-icon.critical {
+  fill: var(--critical);
+}
+
+/* ---------- Forms ---------- */
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.form input {
+  width: 100%;
+  min-width: 0;
+}
+
+.form label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.upload p {
+  margin-top: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.upload-result {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.upload-result ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--critical);
+}
+
+/* ---------- Small screens ---------- */
+@media (max-width: 900px) {
+  .charts,
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 1rem;
+  }
+
+  .topbar {
+    padding: 0.75rem 1rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  .figures {
+    gap: 0.5rem 1.5rem;
+  }
+
+  .figure dd {
+    font-size: 1.5rem;
+  }
+}
